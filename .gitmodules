@@ -1,3 +1,6 @@
-[submodule "loader/src/external/lsplt"]
-	path = loader/src/external/lsplt
-	url = https://github.com/LSPosed/lsplt
+[submodule "PLTI"]
+	path = loader/src/external/plti
+	url = https://github.com/PerformanC/PLTI
+[submodule "CSOLoader"]
+	path = loader/src/external/csoloader
+	url = https://github.com/ThePedroo/CSOLoader

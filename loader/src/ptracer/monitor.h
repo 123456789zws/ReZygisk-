@@ -1,13 +1,13 @@
-#ifndef MAIN_HPP
-#define MAIN_HPP
+#ifndef MONITOR_H
+#define MONITOR_H
 
 #include <stdbool.h>
 
 void init_monitor();
 
-bool trace_zygote(int pid);
+bool trace_zygote(int pid, bool is_tango);
 
-enum Command {
+enum rezygiskd_command {
   START = 1,
   STOP = 2,
   EXIT = 3,
@@ -18,10 +18,9 @@ enum Command {
   DAEMON64_SET_INFO = 6,
   DAEMON32_SET_INFO = 7,
   DAEMON64_SET_ERROR_INFO = 8,
-  DAEMON32_SET_ERROR_INFO = 9,
-  SYSTEM_SERVER_STARTED = 10
+  DAEMON32_SET_ERROR_INFO = 9
 };
 
-int send_control_command(enum Command cmd);
+int send_control_command(enum rezygiskd_command cmd);
 
-#endif /* MAIN_HPP */
+#endif /* MONITOR_H */

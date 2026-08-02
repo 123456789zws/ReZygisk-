@@ -1,13 +1,9 @@
-#include <stdio.h>
-
-#include <sys/types.h>
+#include "common.h"
 
 #include "../utils.h"
-#include "kernelsu.h"
 #include "apatch.h"
+#include "kernelsu.h"
 #include "magisk.h"
-
-#include "common.h"
 
 static struct root_impl impl;
 
@@ -27,6 +23,7 @@ void root_impls_setup(void) {
     impl.impl = Multiple;
   } else if (state_ksu.state == Supported) {
     impl.impl = KernelSU;
+    impl.variant = state_ksu.variant;
   } else if (state_apatch.state == Supported) {
     impl.impl = APatch;
   } else if (state_magisk.state == Supported) {
@@ -58,11 +55,7 @@ void root_impls_setup(void) {
       break;
     }
     case Magisk: {
-      if (state_magisk.variant == 0) {
-        LOGI("Magisk Official root implementation found.\n");
-      } else {
-        LOGI("Magisk Kitsune root implementation found.\n");
-      }
+      LOGI("Magisk root implementation found.\n");
 
       break;
     }
@@ -70,8 +63,7 @@ void root_impls_setup(void) {
 }
 
 void get_impl(struct root_impl *uimpl) {
-  uimpl->impl = impl.impl;
-  uimpl->variant = impl.variant;
+  *uimpl = impl;
 }
 
 bool uid_granted_root(uid_t uid) {
@@ -91,16 +83,16 @@ bool uid_granted_root(uid_t uid) {
   }
 }
 
-bool uid_should_umount(uid_t uid) {
+bool uid_should_umount(uid_t uid, const char *const process) {
   switch (impl.impl) {
     case KernelSU: {
       return ksu_uid_should_umount(uid);
     }
     case APatch: {
-      return apatch_uid_should_umount(uid);
+      return apatch_uid_should_umount(uid, process);
     }
     case Magisk: {
-      return magisk_uid_should_umount(uid);
+      return magisk_uid_should_umount(process);
     }
     default: {
       return false;
@@ -123,4 +115,8 @@ bool uid_is_manager(uid_t uid) {
       return false;
     }
   }
+}
+
+void root_impl_cleanup(void) {
+  if (impl.impl == KernelSU) ksu_cleanup();
 }

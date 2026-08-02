@@ -1,7 +1,5 @@
-.gradle
+.clangd
+.clang-format
 .idea
-.cxx
 .vscode
 build
-local.properties
-Cargo.lock

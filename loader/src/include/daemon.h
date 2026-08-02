@@ -1,106 +1,72 @@
-#pragma once
+#ifndef DAEMON_H
+#define DAEMON_H
 
-#include <string_view>
-#include <string>
+#include <stdbool.h>
+
 #include <unistd.h>
-#include <vector>
 
-#if defined(__LP64__)
-# define LP_SELECT(lp32, lp64) lp64
-#else
-# define LP_SELECT(lp32, lp64) lp32
-#endif
-
-constexpr auto kCPSocketName = "/" LP_SELECT("cp32", "cp64") ".sock";
-
-class UniqueFd {
-    using Fd = int;
-public:
-    UniqueFd() = default;
-
-    UniqueFd(Fd fd) : fd_(fd) {}
-
-    ~UniqueFd() { if (fd_ >= 0) close(fd_); }
-
-    // Disallow copy
-    UniqueFd(const UniqueFd&) = delete;
-
-    UniqueFd& operator=(const UniqueFd&) = delete;
-
-    // Allow move
-    UniqueFd(UniqueFd&& other) { std::swap(fd_, other.fd_); }
-
-    UniqueFd& operator=(UniqueFd&& other) {
-        std::swap(fd_, other.fd_);
-        return *this;
-    }
-
-    // Implict cast to Fd
-    operator const Fd&() const { return fd_; }
-
-private:
-    Fd fd_ = -1;
+enum rezygiskd_actions {
+  ZygoteInjected,
+  GetProcessFlags,
+  GetInfo,
+  ReadModules,
+  RequestCompanionSocket,
+  GetModuleDir,
+  ZygoteRestart,
+  UpdateMountNamespace,
+  RemoveModule
 };
 
-struct zygote_modules {
+struct zygisk_modules {
   char **modules;
   size_t modules_count;
 };
 
-enum zygote_root_impl {
-  ZYGOTE_ROOT_IMPL_NONE,
-  ZYGOTE_ROOT_IMPL_APATCH,
-  ZYGOTE_ROOT_IMPL_KERNELSU,
-  ZYGOTE_ROOT_IMPL_MAGISK
+enum root_impl {
+  ROOT_IMPL_NONE,
+  ROOT_IMPL_APATCH,
+  ROOT_IMPL_KERNELSU,
+  ROOT_IMPL_MAGISK
 };
 
-struct zygote_info {
-  struct zygote_modules *modules;
-  enum zygote_root_impl root_impl;
+struct rezygisk_info {
+  struct zygisk_modules modules;
+  enum root_impl root_impl;
   pid_t pid;
   bool running;
 };
 
-namespace zygiskd {
+enum mount_namespace_state {
+  Clean,
+  Mounted
+};
 
-    struct Module {
-        std::string name;
-        UniqueFd memfd;
+#define TMP_PATH "/data/adb/rezygisk"
 
-        inline explicit Module(std::string name, int memfd) : name(name), memfd(memfd) {}
-    };
-
-    enum class SocketAction {
-        PingHeartBeat,
-        RequestLogcatFd,
-        GetProcessFlags,
-        GetInfo,
-        ReadModules,
-        RequestCompanionSocket,
-        GetModuleDir,
-        ZygoteRestart,
-        SystemServerStarted,
-    };
-
-    void Init(const char *path);
-
-    std::string GetTmpPath();
-
-    bool PingHeartbeat();
-
-    int RequestLogcatFd();
-
-    std::vector<Module> ReadModules();
-
-    uint32_t GetProcessFlags(uid_t uid);
-
-    int ConnectCompanion(size_t index);
-
-    int GetModuleDir(size_t index);
-
-    void ZygoteRestart();
-
-    void SystemServerStarted();
-
-    void GetInfo(struct zygote_info *info);
+static inline const char *rezygiskd_get_path() {
+  return TMP_PATH;
 }
+
+bool rezygiskd_zygote_injected();
+
+uint32_t rezygiskd_get_process_flags(uid_t uid, const char *const process);
+
+void rezygiskd_get_info(struct rezygisk_info *info);
+
+void free_rezygisk_info(struct rezygisk_info *info);
+
+bool rezygiskd_read_modules(struct zygisk_modules *modules);
+
+void free_modules(struct zygisk_modules *modules);
+
+int rezygiskd_connect_companion(size_t index);
+
+int rezygiskd_get_module_dir(size_t index);
+
+void rezygiskd_zygote_restart();
+
+bool rezygiskd_update_mns(enum mount_namespace_state nms_state, char *buf, size_t buf_size);
+
+bool rezygiskd_remove_module(size_t index);
+
+#endif /* DAEMON_H */
